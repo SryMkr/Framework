@@ -14,7 +14,6 @@ import abc
 from typing import List, Tuple, Dict
 import pandas as pd
 import torch
-import numpy as np
 
 
 class AgentAbstractBaseClass(metaclass=abc.ABCMeta):
@@ -69,7 +68,7 @@ class CollectorAgentInterface(AgentAbstractBaseClass):
 
     This agent is responsible for collecting words to be reviewed from history words.
 
-    observation: extract the "history words" from  rl_environment.TimeStep
+    observation: extract the "history words" from rl_environment.TimeStep
     Policy: there are two optional policy including "random", "AMB"
 
     """
@@ -98,9 +97,6 @@ class CollectorAgentInterface(AgentAbstractBaseClass):
          Args:
             time_step: An instance of rl_environment.TimeStep.
 
-
-
-
         Returns:
             List[List[str]]: The words to be reviewed.
         """
@@ -113,12 +109,9 @@ class StudentAgentInterface(AgentAbstractBaseClass):
     The agent is responsible for reviewing selected words from the CollectorAgent each day (Learn).
 
     Observation：rl_environment.TimeStep[observation]["current_session_words"]
-
-    Policy： random (do not learn)
-            excellent (do not forget and do not need to learn)
-            forgetting (forget)
-            learn (forget and learn)
-
+                 rl_environment.TimeStep[observation]["history_words"]
+                 rl_environment.TimeStep[observation]["sessions_number"]
+                 rl_environment.TimeStep[observation]["current_session_words"]
     """
 
     @abc.abstractmethod
@@ -138,21 +131,23 @@ class StudentAgentInterface(AgentAbstractBaseClass):
 
         """
         super().__init__(player_id, player_name)
-        self._policy = policy
+        self._policy: str = policy
 
-        self._excellent_memory_df = excellent_memory_dataframe  # excellent memory dataframe
+        # excellent memory dataframe
+        self._excellent_memory_df: pd.DataFrame = excellent_memory_dataframe
 
-        normal_noise = np.random.normal(0, 1, self._excellent_memory_df.shape)
-        # normalized_noise = (noise - noise.min(axis=1, initial=None, keepdims=True)) / (noise.max(axis=1, initial=None, keepdims=True) - noise.min(axis=1, initial=None, keepdims=True))
-        # random memory dataframe
-        # 将所有负数截断为零
-        normal_noise = np.clip(normal_noise, 0, None)
-        normalized_noise = normal_noise / normal_noise.sum(axis=1, keepdims=True)
-        self._random_memory_df = pd.DataFrame(normalized_noise, columns=self._excellent_memory_df.columns,
-                                              index=self._excellent_memory_df.index)
-        print(self._random_memory_df)
-        # 生成遗忘矩阵
-        # 生成学习矩阵
+        # random memory dataframe and use it as noise
+        stu_memory_tensor = torch.tensor(self._excellent_memory_df.values,
+                                         dtype=torch.float32)  # the shape of distribution
+        noise = torch.randn_like(stu_memory_tensor)  # generate the noise
+        scaled_noise = (noise - noise.min()) / (noise.max() - noise.min())
+        self._random_memory_df: pd.DataFrame = pd.DataFrame(scaled_noise.numpy(), index=self._excellent_memory_df.index,
+                                                            columns=self._excellent_memory_df.columns)
+
+        # forget memory dataframe
+        self._forget_memory_df: pd.DataFrame = pd.DataFrame()
+        # learn memory dataframe
+        self._learn_memory_df: pd.DataFrame = pd.DataFrame()
 
     @abc.abstractmethod
     def step(self, time_step) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -163,21 +158,22 @@ class StudentAgentInterface(AgentAbstractBaseClass):
             time_step: An instance of rl_environment.TimeStep.
 
         Returns:
-            Tuple[pd.DataFrame]: The random (do not learn)
-                                 excellent (do not forget and do not need to learn)
-                                 forgetting (forget)
-                                 learn (forget and learn)  memory dataframe.
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: The random (do not learn)
+                                                                         excellent (do not forget and do not need to learn)
+                                                                         forgetting (forget)
+                                                                         learn (forget then learn).
         """
         pass
 
 
-class ExaminerInterface(AgentAbstractBaseClass):
-    """Examiner Interface： provide feedback based on the [student spelling, correct answer]
+class ExaminerAgentInterface(AgentAbstractBaseClass):
+    """ An interface for a student agent.
+        The agent is responsible for giving the feedback of each memory each day.
+
+        Observation：rl_environment.TimeStep[observation]["history_words"]
+                    rl_environment.TimeStep[observation]["student_memories"]
+
         Legal actions: [0，1], where 0 presents wrong, 1 denotes right
-        Observation：TimeStep [student_spelling，answer]
-        Policy：no policy
-        Output：actions: for example, ([0,1,1,0,1,1,1], similarity)
-        State: calculate the similarity
     """
 
     def __init__(self,
@@ -185,11 +181,16 @@ class ExaminerInterface(AgentAbstractBaseClass):
                  player_name: str):
         super().__init__(player_id,
                          player_name)
-        """Initializes examiner agent"""
 
     @abc.abstractmethod
-    def step(self, time_step) -> Tuple[Dict[str, int], float]:
+    def step(self, time_step) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
-        :returns the ({letter_position: mark}, accuracy)
+        Executes a step for the agent.
+
+        Args:
+            time_step: An instance of rl_environment.TimeStep.
+
+        Returns:
+           Dict[Tuple[str, str]: Tuple[List[str], similarity]], average_similarity
         """
         pass

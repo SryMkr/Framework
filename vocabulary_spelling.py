@@ -9,7 +9,7 @@ the interaction of env and agents
 
 import os
 from environment_instance import VocabSpellGame
-from agents_instance import CollectorPlayer, StudentPlayer
+from agents_instance import CollectorPlayer, StudentPlayer, ExaminerPlayer
 import pandas as pd
 
 current_path = os.getcwd()  # get the current path
@@ -32,18 +32,17 @@ student_excellent_memory_path = os.path.join(current_path, 'StudentMemory/excell
 excellent_memory_df = pd.read_excel(student_excellent_memory_path, index_col=0, header=0)
 
 agents = [CollectorPlayer(0, 'CollectorPlayer', 'random'),
-          StudentPlayer(1, 'StudentPlayer', excellent_memory_df, 'None')]
-# agents = [
-#           , ExaminerPlayer(3, 'examiner_player')]
-#
-#
+          StudentPlayer(1, 'StudentPlayer', excellent_memory_df, 'None'),
+          ExaminerPlayer(2, 'ExaminerPlayer')]
+
+
 time_step = env.reset()  # initialize state
-# # print(time_step)
+
 while not time_step.last():  # not terminate
     player_id = time_step.observations["current_player"]  # current player
     print(player_id)
     agent_output = agents[player_id].step(time_step)  # action
-    # print(agent_output)
+    print(agent_output)
     time_step = env.step(agent_output)  # current TimeStep
 # print(time_step.observations["vocab_sessions_num"])
 

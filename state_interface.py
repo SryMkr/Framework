@@ -3,7 +3,6 @@ define the state of environment
 state provide whole necessary information to help env construct the TimeStep
 
 """
-import os
 import abc
 import pandas as pd
 from typing import List, Tuple, Dict
@@ -43,66 +42,21 @@ class StateInterface(metaclass=abc.ABCMeta):
         self._current_session_words: List[List[str]] = []
 
         self._legal_actions: List[any] = [self._history_words,
-                                          self._current_session_words]
+                                          self._current_session_words,
+                                          [0, 1]]
 
-        self._current_session_num: int = 1
+        self._current_session_num: int = 0
         self._game_over: bool = False
         self._current_player: int = 0
-        self._student_memories: Tuple[pd.DataFrame, pd.DataFrame] = tuple()
+        self._student_memories: Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame] = tuple()
 
-
-
-
-        self._rewards: int = 0
         self._current_corpus = tuple()
-        self._condition: str = ''
-        self._answer: str = ''
-        self._answer_length: int = 0
-
-        self._LETTERS: List[str] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
-                                    'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 
         # load students memory dataframe
-
+        self._rewards: int = 0
         self._examiner_feedback: Tuple[List[int], float, float] = tuple()
         self._history_information: Dict[tuple, list] = {}
         self._avg_accuracy = []  # store the accuracy of each round
-
-    @abc.abstractmethod
-    def reward_function(self, information) -> int:
-        """
-        apply action, and store necessary information
-        :return: Returns the (player ID) of the next player.
-        """
-        return self._rewards
-
-    @property
-    def rewards(self) -> int:
-        """
-        :return:  the rewards .
-        """
-        return self._rewards
-
-    @property
-    def answer_length(self) -> int:
-        """
-        :return: Returns answer length
-        """
-        return self._answer_length
-
-    @property
-    def answer(self) -> str:
-        """
-        :return: Returns the correct answer
-        """
-        return self._answer
-
-    @property
-    def condition(self) -> str:
-        """
-        :return: Returns the condition for spelling
-        """
-        return self._condition
 
     @property
     def average_accuracy(self) -> List[float]:
@@ -111,7 +65,12 @@ class StateInterface(metaclass=abc.ABCMeta):
         """
         return self._avg_accuracy
 
-
+    @property
+    def rewards(self) -> int:
+        """
+        :return: Returns the list of accuracy of each round
+        """
+        return self._rewards
 
     @property
     def examiner_feedback(self) -> Tuple[List[int], float, float]:

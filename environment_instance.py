@@ -51,11 +51,11 @@ class VocabSpellGame(EnvironmentInterface):
                         "current_session_words": None,
                         "legal_actions": [],
                         "current_player": self._state.current_player,
-
+                        "student_memories": None,
                         "current_session_num": None,
-                        "condition": None, "answer": None,
-                        "answer_length": None,
-                        "examiner_feedback": None, "history_information": None}
+
+                        "examiner_feedback": None,
+                        "history_information": None}
 
         # add the legal action of each player
         for player_ID in range(self._player_num):
@@ -74,11 +74,9 @@ class VocabSpellGame(EnvironmentInterface):
                         "current_session_words": self._state.current_session_words,
                         "legal_actions": [],
                         "current_player": self._state.current_player,
-
                         "current_session_num": self._state.current_session_num,
-                        "condition": self._state.condition,
-                        "answer": self._state.answer,
-                        "answer_length": self._state.answer_length,
+                        "student_memories": self._state.student_memories,
+
                         "examiner_feedback": self._state.examiner_feedback,
                         "history_information": self._state.history_information
                         }

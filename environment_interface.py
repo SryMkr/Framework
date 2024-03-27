@@ -142,7 +142,7 @@ class EnvironmentInterface(metaclass=abc.ABCMeta):
         self._state: Optional[State] = None
         self._discount: float = discount
         self._should_reset: bool = True
-        self._player_num: int = 2
+        self._player_num: int = 3
 
     @abc.abstractmethod
     def new_initial_state(self, history_words: List[List[str]], review_words_number: int,
