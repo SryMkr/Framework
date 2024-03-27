@@ -9,11 +9,12 @@ the interaction of env and agents
 
 import os
 from environment_instance import VocabSpellGame
-# from agents_instance import SessionCollectorPlayer, PresentWordPlayer, StudentPlayer, ExaminerPlayer
-
+from agents_instance import CollectorPlayer, StudentPlayer
+import pandas as pd
 
 current_path = os.getcwd()  # get the current path
-vocabulary_absolute_path = os.path.join(current_path, 'VocabularyBook', 'CET4', 'vocabulary.json')  # get the vocab data path
+vocabulary_absolute_path = os.path.join(current_path, 'VocabularyBook', 'CET4',
+                                        'vocabulary.json')  # get the vocab data path
 
 env = VocabSpellGame(vocabulary_book_path=vocabulary_absolute_path,
                      vocabulary_book_name='CET4',
@@ -27,17 +28,24 @@ env = VocabSpellGame(vocabulary_book_path=vocabulary_absolute_path,
                      )  # initialize game environment
 
 # instance agents
-# agents = [SessionCollectorPlayer(0, 'session_player', 'MAB'), PresentWordPlayer(1, 'present_player', 'sequential'),
-#           StudentPlayer(2, 'stu_player', 'forget'), ExaminerPlayer(3, 'examiner_player')]
+student_excellent_memory_path = os.path.join(current_path, 'StudentMemory/excellent_memory.xlsx')
+excellent_memory_df = pd.read_excel(student_excellent_memory_path, index_col=0, header=0)
+
+agents = [CollectorPlayer(0, 'CollectorPlayer', 'random'),
+          StudentPlayer(1, 'StudentPlayer', excellent_memory_df, 'None')]
+# agents = [
+#           , ExaminerPlayer(3, 'examiner_player')]
 #
 #
-# time_step = env.reset()  # initialize state
+time_step = env.reset()  # initialize state
 # # print(time_step)
-# while not time_step.last():  # not terminate
-#     player_id = time_step.observations["current_player"]  # current player
-#     agent_output = agents[player_id].step(time_step)  # action
-#     time_step = env.step(agent_output)  # current TimeStep
-    # print(time_step.observations["vocab_sessions_num"])
+while not time_step.last():  # not terminate
+    player_id = time_step.observations["current_player"]  # current player
+    print(player_id)
+    agent_output = agents[player_id].step(time_step)  # action
+    # print(agent_output)
+    time_step = env.step(agent_output)  # current TimeStep
+# print(time_step.observations["vocab_sessions_num"])
 
 # print(time_step.observations["history_information"])
 # # # 把这个数据保存为json文件

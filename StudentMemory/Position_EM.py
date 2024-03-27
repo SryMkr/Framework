@@ -14,7 +14,7 @@ import string
 
 CURRENT_PATH = os.getcwd()  # get the current path
 VOCAB_PATH: str = os.path.join(CURRENT_PATH, 'vocabulary_books', 'CET4', 'newVocab.json')  # get the vocab data path
-STU_MEMORY_PATH = os.path.join(CURRENT_PATH, 'stu_memory.xlsx')
+STU_MEMORY_PATH = os.path.join(CURRENT_PATH, 'excellent_memory.xlsx')
 corpus_instance = ReadVocabBook(vocab_book_path=VOCAB_PATH,
                                 vocab_book_name='CET4',
                                 chinese_setting=False,

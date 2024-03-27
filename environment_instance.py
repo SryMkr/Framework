@@ -37,23 +37,24 @@ class VocabSpellGame(EnvironmentInterface):
                          )
 
     def new_initial_state(self, history_words, review_words_number, sessions_number):
-        """ calling the state, and pass the history words"""
+        """ calling the state, and pass the history words, review_words_number, sessions_number """
         return State(history_words, review_words_number, sessions_number)
 
     def reset(self):
         """ initialize the state of environment"""
-        self._state = self.new_initial_state(self.history_words, self.review_words_number, self.sessions_number)  # get the initial state of environment
+        self._state = self.new_initial_state(self.history_words, self.review_words_number, self.sessions_number)
         self._should_reset = False
         # initialize the observations, and read from state object
-        observations = {"history_words": None, "current_session_num": None,
+        observations = {"history_words": self._state.history_words,
+                        "review_words_number": self._state.review_words_number,
                         "sessions_number": self._state.sessions_number,
-                        "review_words_number": self._state.review_words_num,
-                        "current_session_words": None, "legal_actions": [],
+                        "current_session_words": None,
+                        "legal_actions": [],
                         "current_player": self._state.current_player,
-                        "student_excellent_memory": self._state.stu_excellent_df,
-                        "student_forget_memory": self._state.stu_forget_df,
+
+                        "current_session_num": None,
                         "condition": None, "answer": None,
-                        "answer_length": None, "student_spelling": None,
+                        "answer_length": None,
                         "examiner_feedback": None, "history_information": None}
 
         # add the legal action of each player
@@ -68,16 +69,16 @@ class VocabSpellGame(EnvironmentInterface):
 
     def get_time_step(self):
         observations = {"history_words": self._state.history_words,
+                        "review_words_number": self._state.review_words_number,
                         "sessions_number": self._state.sessions_number,
-                        "review_words_number": self._state.review_words_num,
-                        "current_session_num": self._state.current_session_num,
-                        "current_session_words": self._state.current_session_words, "legal_actions": [],
+                        "current_session_words": self._state.current_session_words,
+                        "legal_actions": [],
                         "current_player": self._state.current_player,
+
+                        "current_session_num": self._state.current_session_num,
                         "condition": self._state.condition,
                         "answer": self._state.answer,
-                        "student_excellent_memory": self._state.stu_excellent_df,
-                        "student_forget_memory": self._state.stu_forget_df,
-                        "answer_length": self._state.answer_length, "student_spelling": self._state.stu_spelling,
+                        "answer_length": self._state.answer_length,
                         "examiner_feedback": self._state.examiner_feedback,
                         "history_information": self._state.history_information
                         }

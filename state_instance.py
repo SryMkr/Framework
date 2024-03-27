@@ -10,11 +10,6 @@ class State(StateInterface):
         """get the legal action of one agent"""
         return self._legal_actions[player_ID]
 
-    def tutor_legal_actions(self):
-        """define the tutor action, which is tasks from Collector Agent """
-        self._legal_actions[1] = self._current_session_words
-        self._current_player += 1
-
     def spilt_task(self, action):
         """get the 'condition' and word_length for student, and answer for examiner """
         for task in self._current_session_words:
@@ -25,50 +20,41 @@ class State(StateInterface):
                 self._answer_length = len(''.join(task[1].split(' ')))
                 break
 
-    def student_spelling(self, actions):
-        """ convert index to letter """
-        self._stu_spelling = [self._LETTERS[action] for action in actions]
-        self._current_player += 1
-
     def apply_action(self, action):
         """ control the transition of state"""
         if self._current_player == 0:  # 0 means collector agent
             self._current_session_words = action   # the objective of the Collector Agent is selected the prioritised words
-            self.tutor_legal_actions()  # define the second player legal actions
 
-        elif self._current_player == 1:  # 1 means tutor agent
-            self.spilt_task(action)
-            self._legal_actions[self._current_player].remove(action)  # remover the task
-            self._current_player += 1
+        elif self._current_player == 1:  # 1 is student agent
+            self._student_memories = action
 
-        elif self._current_player == 2:  # 2 is student agent
-            self.student_spelling(action[0])
-            self._stu_forget_df = action[1]  # update the student memory dataframe
+        self._current_player += 1
 
-        elif self._current_player == 3:  # 3 is examiner agent
-            self._examiner_feedback = action
-
-            # update the history information
-            self._history_information[self._current_corpus] = [self._examiner_feedback]
-            # store all information
-            # if self._current_corpus in self._history_information:
-            #     self._history_information[self._current_corpus].append(self._examiner_feedback)
-            # else:
-            #     self._history_information[self._current_corpus] = [self._examiner_feedback]
-
-            # if session task is empty, then select a new session, else continue to select new word from the session
-            if len(self.legal_actions(1)) == 0:
-                """如果当前的session为空则第一个玩家重新选择session"""
-                self._current_player = 0
-                self._current_session_num += 1  # change the number of sessions
-                # 如果要计算平均准确度，一定要计算根据当前的记忆，对历史单词的准确度
-
-                print(f"the session {self._current_session_num}current history information is", len(self._history_information))
-            else:
-                self._current_player = 1
-        if len(self._legal_actions[1]) == 0 and self._current_session_num == self.sessions_number:
+        if self._current_session_num == self.sessions_number:
             """ if the session has been finished and the session is the last session,then game over """
             self._game_over = True
+        # elif self._current_player == 3:  # 3 is examiner agent
+        #     self._examiner_feedback = action
+        #
+        #     # update the history information
+        #     self._history_information[self._current_corpus] = [self._examiner_feedback]
+        #     # store all information
+        #     # if self._current_corpus in self._history_information:
+        #     #     self._history_information[self._current_corpus].append(self._examiner_feedback)
+        #     # else:
+        #     #     self._history_information[self._current_corpus] = [self._examiner_feedback]
+        #
+        #     # if session task is empty, then select a new session, else continue to select new word from the session
+        #     if len(self.legal_actions(1)) == 0:
+        #         """如果当前的session为空则第一个玩家重新选择session"""
+        #
+        #         self._current_session_num += 1  # change the number of sessions
+        #         # 如果要计算平均准确度，一定要计算根据当前的记忆，对历史单词的准确度
+        #
+        #         print(f"the session {self._current_session_num}current history information is", len(self._history_information))
+        #     else:
+        #         self._current_player = 1
+
 
     def reward_function(self, information):
         """the reward only for tutor agent, the information just accuracy
