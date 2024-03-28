@@ -9,7 +9,7 @@ Tasks:
 step 1: calculate the KL divergence between wrong letter and excellent
 step 2: sort by descending
 step 3：the order will be the top 50 words
-接下来的任务是 嵌入不同的算法，来选择最合适的单词
+接下来的任务是 嵌入不同的算法，来选择最合适的单词，先嵌入MAB
 """
 
 
@@ -18,7 +18,7 @@ import string
 import Levenshtein
 from agents_interface import *
 import numpy as np
-
+from Algorithms.CollectorAgent.MAB import MultiArmBandit
 
 # TaskCollector Agent
 class CollectorPlayer(CollectorAgentInterface):
@@ -37,25 +37,20 @@ class CollectorPlayer(CollectorAgentInterface):
         legal_actions = time_step.observations["legal_actions"][self.player_id]
         review_words_number = time_step.observations["review_words_number"]
         history_information = time_step.observations["history_information"]
-        # student_excellent_df = time_step.observations["student_excellent_memory"]
-        # student_forget_df = time_step.observations["student_forget_memory"]
-
         if self._policy == 'random':  # randomly select tasks per day
             action = random.sample(legal_actions, review_words_number)
 
         elif self._policy == 'MAB':  # Multi-Arm Bandit algorithm
-            pass
-            # if history_information is None:
-            #     action = random.sample(legal_actions, review_words_number)
-            # else:
-            #     action = random.sample(legal_actions, review_words_number)
-            #     # 如何将feedback的信息和review的信息结合？
-            #     # print(history_information)
-            #     # print(legal_actions)
-            #     # print(student_forget_df)
-            #     # print(student_excellent_df)
-            #     # print(student_excellent_df)
-            # # history information will be used here
+
+            if history_information is None:
+                action = random.sample(legal_actions, review_words_number)
+            else:
+                _, student_excellent_memory, _, student_learn_memory = time_step.observations["student_memories"]
+                # 如何直接利用examiner的反馈信息？
+                bandit = MultiArmBandit(len(legal_actions), legal_actions)
+                bandit.train_MAB(student_excellent_memory, student_learn_memory)
+                print(bandit.arm_values)
+                print(bandit.arm_values)
         return action
 
 

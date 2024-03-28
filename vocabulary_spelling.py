@@ -71,7 +71,7 @@ if __name__ == "__main__":
     student_excellent_memory_path = os.path.join(current_path, 'StudentMemory/excellent_memory.xlsx')
     excellent_memory_df = pd.read_excel(student_excellent_memory_path, index_col=0, header=0)
 
-    agents = [CollectorPlayer(0, 'CollectorPlayer', 'random'),
+    agents = [CollectorPlayer(0, 'CollectorPlayer', 'MAB'),
               StudentPlayer(1, 'StudentPlayer', excellent_memory_df, 'None'),
               ExaminerPlayer(2, 'ExaminerPlayer')]
 
