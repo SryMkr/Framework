@@ -53,7 +53,6 @@ class VocabSpellGame(EnvironmentInterface):
                         "current_player": self._state.current_player,
                         "student_memories": None,
                         "current_session_num": None,
-
                         "examiner_feedback": None,
                         "history_information": None}
 
@@ -76,7 +75,6 @@ class VocabSpellGame(EnvironmentInterface):
                         "current_player": self._state.current_player,
                         "current_session_num": self._state.current_session_num,
                         "student_memories": self._state.student_memories,
-
                         "examiner_feedback": self._state.examiner_feedback,
                         "history_information": self._state.history_information
                         }

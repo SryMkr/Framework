@@ -9,19 +9,14 @@ Tasks:
 step 1: calculate the KL divergence between wrong letter and excellent
 step 2: sort by descending
 step 3：the order will be the top 50 words
-既然分组了，如何添加噪声，很简单，按照session的个数，把噪声分组，那么对应每一组搁的时间代表了那一组的遗忘，不是全部添加而是只添加那几个单词
-新的单词，按照现在有方式进行软更新，看看最后的结果能不能抵抗遗忘？
-至于老师推荐单词的话，那是后期的任务了，主要是为了一个平衡，对于每一个推荐的单词，准确度都要是当前组里最高的
+接下来的任务是 嵌入不同的算法，来选择最合适的单词
 """
-from itertools import chain
 
-import os
+
 import random
 import string
 import Levenshtein
 from agents_interface import *
-import pandas as pd
-import torch
 import numpy as np
 
 
@@ -75,6 +70,9 @@ class StudentPlayer(StudentAgentInterface):
                          player_name,
                          excellent_memory_dataframe,
                          policy)
+        self.history_unique_phonemes = ()
+        self.excel_list = None
+        self.noise_list = None
 
     @staticmethod
     def forgetting_parameters(timing_steps, excel_start=0.9, excel_end=0.4, noise_start=0.1, noise_end=1, decay_rate=2):
@@ -119,14 +117,16 @@ class StudentPlayer(StudentAgentInterface):
     def step(self, time_step):
 
         current_session_number = time_step.observations["current_session_num"]
-        history_words = time_step.observations["history_words"]
-        sessions_number = time_step.observations["sessions_number"]
-        history_unique_phonemes = self.add_position(history_words)
-        excel_list, noise_list = self.forgetting_parameters(sessions_number)
-        self._forget_memory_df = self.forget_process(list(history_unique_phonemes), self._excellent_memory_df,
+        if current_session_number == 0:
+            history_words = time_step.observations["history_words"]
+            sessions_number = time_step.observations["sessions_number"]
+            self.history_unique_phonemes = self.add_position(history_words)
+            self.excel_list, self.noise_list = self.forgetting_parameters(sessions_number)
+        self._forget_memory_df = self.forget_process(list(self.history_unique_phonemes), self._excellent_memory_df,
                                                      self._random_memory_df,
-                                                     excel_list[current_session_number],
-                                                     noise_list[current_session_number])
+                                                     self.excel_list[current_session_number],
+                                                     self.noise_list[current_session_number])
+
         # for learn memory
         current_session_words = time_step.observations["current_session_words"]
         tasks_unique_phonemes = self.add_position(current_session_words)
@@ -144,7 +144,9 @@ class ExaminerPlayer(ExaminerAgentInterface):
 
         self.alphabet = string.ascii_lowercase
 
-    def spelling(self, memory, history_words):
+    def evaluation(self, memory, history_words):
+        word_accuracy_list = []
+        pair_feedback = {}
         for pair in history_words:
             spelling = []
             split_phoneme = pair[0].split(' ')
@@ -162,29 +164,27 @@ class ExaminerPlayer(ExaminerAgentInterface):
                     possible_results = memory.loc[position_condition, result_columns]
                     letters_prob = possible_results.sum(axis=0)
                     letter = letters_prob.idxmax()
-                spelling.append(letter)
-            # 明天起来做比较把
-            print(spelling)
+                spelling.append(letter.split('_')[0])
+
+            student_spelling = ''.join(spelling)
+            correct_spelling = ''.join(split_letters)
+
+            # calculate the similarity of pair
+            word_accuracy = round(Levenshtein.ratio(correct_spelling, student_spelling), 2)
+            # mark each letter
+            letters_mark = [x + '_' + str(1) if x == y else x + '_' + str(0) for x, y in
+                            zip(student_spelling, correct_spelling)]
+            pair_feedback[tuple(pair)] = (letters_mark, word_accuracy)
+
+            word_accuracy_list.append(word_accuracy)
+        average_accuracy = round(sum(word_accuracy_list) / len(word_accuracy_list), 2)
+        return pair_feedback, average_accuracy
 
     def step(self, time_step):
+        self._examiner_feedback = []
         student_memories = time_step.observations["student_memories"]
         history_words = time_step.observations["history_words"]
         for memory in student_memories:
-            self.spelling(memory, history_words)
-        # marks = []
-        # actions = {}
-        # answer = ''.join(time_step.observations["answer"].split(' '))  # 'b a t h' --> ['b', 'a', 't', 'h']
-        # student_spelling = ''.join(time_step.observations["student_spelling"])  # ['f', 'h', 'v', 'q']
-        # word_accuracy = round(Levenshtein.ratio(answer, student_spelling), 3)
-        # answer_length = time_step.observations["answer_length"]
-        # legal_actions = time_step.observations["legal_actions"][self.player_id]
-        # for position in range(answer_length):
-        #     if student_spelling[position] == answer[position]:
-        #         marks.append(legal_actions[1])
-        #     else:
-        #         marks.append(legal_actions[0])
-        # self.accuracy.append(word_accuracy)
-        # # 在这里把位置加进去，然后和对错结合起来并组成一个元组
-        # for position, letter in enumerate(student_spelling):
-        #     actions[letter + '_' + str(position)] = marks[position]
-        # return actions, word_accuracy
+            examiner_feedback = self.evaluation(memory, history_words)
+            self._examiner_feedback.append(examiner_feedback)
+        return self._examiner_feedback

@@ -50,20 +50,10 @@ class StateInterface(metaclass=abc.ABCMeta):
         self._current_player: int = 0
         self._student_memories: Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame] = tuple()
 
-        self._current_corpus = tuple()
-
         # load students memory dataframe
         self._rewards: int = 0
-        self._examiner_feedback: Tuple[List[int], float, float] = tuple()
-        self._history_information: Dict[tuple, list] = {}
-        self._avg_accuracy = []  # store the accuracy of each round
-
-    @property
-    def average_accuracy(self) -> List[float]:
-        """
-        :return: Returns the list of accuracy of each round
-        """
-        return self._avg_accuracy
+        self._examiner_feedback: list = []
+        self._history_information: Dict[int, list] = {}
 
     @property
     def rewards(self) -> int:
@@ -73,7 +63,7 @@ class StateInterface(metaclass=abc.ABCMeta):
         return self._rewards
 
     @property
-    def examiner_feedback(self) -> Tuple[List[int], float, float]:
+    def examiner_feedback(self) -> list:
         """
         :return: feedback per letter
         """
@@ -158,7 +148,7 @@ class StateInterface(metaclass=abc.ABCMeta):
         return self._game_over
 
     @property
-    def student_memories(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def student_memories(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         :return: student memories
         """

@@ -172,8 +172,6 @@ class ExaminerAgentInterface(AgentAbstractBaseClass):
 
         Observation：rl_environment.TimeStep[observation]["history_words"]
                     rl_environment.TimeStep[observation]["student_memories"]
-
-        Legal actions: [0，1], where 0 presents wrong, 1 denotes right
     """
 
     def __init__(self,
@@ -182,8 +180,10 @@ class ExaminerAgentInterface(AgentAbstractBaseClass):
         super().__init__(player_id,
                          player_name)
 
+        self._examiner_feedback: List[Tuple[any]] = []
+
     @abc.abstractmethod
-    def step(self, time_step) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def step(self, time_step) -> List[Tuple]:
         """
         Executes a step for the agent.
 
@@ -191,6 +191,6 @@ class ExaminerAgentInterface(AgentAbstractBaseClass):
             time_step: An instance of rl_environment.TimeStep.
 
         Returns:
-           Dict[Tuple[str, str]: Tuple[List[str], similarity]], average_similarity
+           List[Tuple[Dict[any]]]: ({('d w ɛ l ɪ ŋ', 'd w e l l i n g'): (['d_1', 'w_1', 'e_1', 'l_1', 'i_0', 'n_0', 'n_1', 'g_1'], 0.88))
         """
         pass

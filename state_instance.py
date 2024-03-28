@@ -1,5 +1,4 @@
 from state_interface import StateInterface
-import numpy as np
 
 
 class State(StateInterface):
@@ -20,6 +19,7 @@ class State(StateInterface):
 
         elif self._current_player == 2:  # 2 is examiner agent
             self._examiner_feedback = action
+            self._history_information[self._current_session_num] = self._examiner_feedback
             self._current_session_num += 1  # change the number of sessions
 
         self._current_player += 1

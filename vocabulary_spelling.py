@@ -1,50 +1,89 @@
 """
 the interaction of env and agents
-通过不停的加遗忘，可以collect每一个单词在多种情况下的反馈信息，可以当作一个信息收集器
-问题是我准备了一个top 50的单词，如何确定这50个单词是学生急需学习的单词？
-
-# 先实现random的图像，因为最终肯定是要对比的
-
 """
 
 import os
+from typing import Dict
+import matplotlib.pyplot as plt
 from environment_instance import VocabSpellGame
 from agents_instance import CollectorPlayer, StudentPlayer, ExaminerPlayer
 import pandas as pd
 
-current_path = os.getcwd()  # get the current path
-vocabulary_absolute_path = os.path.join(current_path, 'VocabularyBook', 'CET4',
-                                        'vocabulary.json')  # get the vocab data path
 
-env = VocabSpellGame(vocabulary_book_path=vocabulary_absolute_path,
-                     vocabulary_book_name='CET4',
-                     chinese_setting=False,
-                     phonetic_setting=True,
-                     POS_setting=False,
-                     english_setting=True,
-                     history_words_number=50,
-                     review_words_number=10,
-                     sessions_number=60,
-                     )  # initialize game environment
+class draw_graph:
+    def __init__(self, history_information: Dict[int, list]):
+        self.history_information = history_information
 
-# instance agents
-student_excellent_memory_path = os.path.join(current_path, 'StudentMemory/excellent_memory.xlsx')
-excellent_memory_df = pd.read_excel(student_excellent_memory_path, index_col=0, header=0)
+    def draw_average_accuracy(self):
+        random_accuracy = []
+        excellent_accuracy = []
+        forget_accuracy = []
+        learn_accuracy = []
+        for session_number, information in self.history_information.items():
+            random_accuracy.append(information[0][1])
+            excellent_accuracy.append(information[1][1])
+            forget_accuracy.append(information[2][1])
+            learn_accuracy.append(information[3][1])
 
-agents = [CollectorPlayer(0, 'CollectorPlayer', 'random'),
-          StudentPlayer(1, 'StudentPlayer', excellent_memory_df, 'None'),
-          ExaminerPlayer(2, 'ExaminerPlayer')]
+        plt.figure(figsize=(15, 6))
+        x_points = list(self.history_information.keys())
+        # draw graph
+        plt.plot(x_points, random_accuracy, color='blue', linestyle='-', label='Random')
+        plt.plot(x_points, excellent_accuracy, color='red', linestyle='-', label='Excellent')
+        plt.plot(x_points, forget_accuracy, color='green', linestyle='-.', label='Forget')
+        plt.plot(x_points, learn_accuracy, color='orange', linestyle='--', label='Learn')
+
+        for i in range(len(x_points)):
+            plt.text(x_points[i], random_accuracy[i], str(random_accuracy[i]), ha='center', va='bottom')
+            plt.text(x_points[i], excellent_accuracy[i], str(excellent_accuracy[i]), ha='center', va='bottom')
+            plt.text(x_points[i], forget_accuracy[i], str(forget_accuracy[i]), ha='center', va='bottom')
+            plt.text(x_points[i], learn_accuracy[i], str(learn_accuracy[i]), ha='center', va='bottom')
+
+        # 添加标题和标签
+        plt.title('Average Accuracy Each Session ')
+        plt.xlabel('Days')
+        plt.ylabel('Average Accuracy')
+        plt.xticks(x_points)
+        # 添加图例
+        plt.legend()
+
+        # 显示图形
+        plt.show()
 
 
-time_step = env.reset()  # initialize state
+if __name__ == "__main__":
+    current_path = os.getcwd()  # get the current path
+    vocabulary_absolute_path = os.path.join(current_path, 'VocabularyBook', 'CET4',
+                                            'vocabulary.json')  # get the vocab data path
 
-while not time_step.last():  # not terminate
-    player_id = time_step.observations["current_player"]  # current player
-    print(player_id)
-    agent_output = agents[player_id].step(time_step)  # action
-    print(agent_output)
-    time_step = env.step(agent_output)  # current TimeStep
-# print(time_step.observations["vocab_sessions_num"])
+    env = VocabSpellGame(vocabulary_book_path=vocabulary_absolute_path,
+                         vocabulary_book_name='CET4',
+                         chinese_setting=False,
+                         phonetic_setting=True,
+                         POS_setting=False,
+                         english_setting=True,
+                         history_words_number=50,
+                         review_words_number=10,
+                         sessions_number=30,
+                         )  # initialize game environment
+
+    # instance agents
+    student_excellent_memory_path = os.path.join(current_path, 'StudentMemory/excellent_memory.xlsx')
+    excellent_memory_df = pd.read_excel(student_excellent_memory_path, index_col=0, header=0)
+
+    agents = [CollectorPlayer(0, 'CollectorPlayer', 'random'),
+              StudentPlayer(1, 'StudentPlayer', excellent_memory_df, 'None'),
+              ExaminerPlayer(2, 'ExaminerPlayer')]
+
+    time_step = env.reset()  # initialize state
+
+    while not time_step.last():  # not terminate
+        player_id = time_step.observations["current_player"]  # current player
+        agent_output = agents[player_id].step(time_step)  # action
+        time_step = env.step(agent_output)  # current TimeStep
+    draw_accuracy = draw_graph(time_step.observations["history_information"])
+    draw_accuracy.draw_average_accuracy()
+
 
 # print(time_step.observations["history_information"])
 # # # 把这个数据保存为json文件
