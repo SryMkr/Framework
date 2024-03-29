@@ -70,7 +70,7 @@ class CollectorAgentInterface(AgentAbstractBaseClass):
 
     observation: extract the "history words" from rl_environment.TimeStep
     Policy: there are two optional policy including "random", "AMB"
-
+            不同的agent之间的选词效果需要进行比较，所以它的action返回的时候是不同的agent选择的词
     """
 
     @abc.abstractmethod

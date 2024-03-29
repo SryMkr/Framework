@@ -12,13 +12,14 @@ step 3：the order will be the top 50 words
 接下来的任务是 嵌入不同的算法，来选择最合适的单词，先嵌入MAB
 """
 
-
 import random
 import string
 import Levenshtein
 from agents_interface import *
 import numpy as np
 from Algorithms.CollectorAgent.MAB import MultiArmBandit
+from operator import itemgetter
+
 
 # TaskCollector Agent
 class CollectorPlayer(CollectorAgentInterface):
@@ -31,6 +32,10 @@ class CollectorPlayer(CollectorAgentInterface):
         super().__init__(player_id,
                          player_name,
                          policy)
+
+    def MultiArmBandits(self):
+
+        pass
 
     def step(self, time_step):
         action = []
@@ -46,11 +51,12 @@ class CollectorPlayer(CollectorAgentInterface):
                 action = random.sample(legal_actions, review_words_number)
             else:
                 _, student_excellent_memory, _, student_learn_memory = time_step.observations["student_memories"]
-                # 如何直接利用examiner的反馈信息？
                 bandit = MultiArmBandit(len(legal_actions), legal_actions)
                 bandit.train_MAB(student_excellent_memory, student_learn_memory)
-                print(bandit.arm_values)
-                print(bandit.arm_values)
+                words_value_pair = dict(zip(map(tuple, legal_actions), bandit.arm_values))
+                sorted_pair = sorted(words_value_pair.items(), key=itemgetter(1), reverse=True)
+                action = [list(item[0]) for item in sorted_pair[-review_words_number:]]
+                # 如何直接利用examiner的反馈信息？
         return action
 
 

@@ -84,9 +84,3 @@ if __name__ == "__main__":
     draw_accuracy = draw_graph(time_step.observations["history_information"])
     draw_accuracy.draw_average_accuracy()
 
-
-# print(time_step.observations["history_information"])
-# # # 把这个数据保存为json文件
-# with open('agent_RL/history_information.pkl', 'wb') as pkl_file:
-#     pickle.dump(time_step.observations["history"], pkl_file)
-# print(time_step.observations['history'])

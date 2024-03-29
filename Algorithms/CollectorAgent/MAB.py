@@ -8,8 +8,6 @@ define observation space, action space, reward function
 # 第一步先使用最简单的办法，就是每一轮的feedback，把learn的读取出来然后计算KL散度，选择前10个让其学习
 """
 
-import Levenshtein
-import string
 import numpy as np
 from scipy.stats import entropy
 
@@ -51,7 +49,6 @@ class MultiArmBandit:
             forget_prob = forget_dataframe.loc[position_phoneme].values
             total_entropy += entropy(excellent_prob, forget_prob, base=2)
         reward = total_entropy / len(position_phonemes)
-
         return reward
 
     def update(self, chosen_arm, reward):
@@ -71,58 +68,6 @@ class MultiArmBandit:
             selected_arm = self.select_arm(exploration_rate)
             selected_arm_reward = self.reward_function(selected_arm, excellent_memory_df, forget_memory_df)
             self.update(selected_arm, selected_arm_reward)
-
-
-class evaluate_improvement:
-    def __init__(self, memory, corpus):
-        self.memory = memory
-        self.corpus = corpus
-        self.student_answer_pair = []
-        self.accuracy = []
-        self.completeness = []
-        self.perfect = []
-        self.avg_accuracy = []
-        self.avg_completeness = []
-        self.avg_perfect = []
-
-    def generate_answer(self):
-        """ generate answer based on the given phonemes,而且我要知道答案的长度，然后根据所有的音标对每一个位置选择最大值"""
-        for phonemes, answer in self.corpus:
-            phonemes = phonemes.split(' ')
-            answer = answer.split(' ')
-            spelling = []
-            answer_length = len(answer)
-            alphabet = string.ascii_lowercase
-            for i in range(answer_length):
-                # 将26个字母和位置结合起来，组成列索引
-                if i == 0:
-                    result_columns = [al + '_' + str(i) for al in alphabet]
-                    possible_results = self.memory.loc[phonemes[0], result_columns]
-                    letter = possible_results.idxmax()
-                else:
-                    result_columns = [al + '_' + str(i) for al in alphabet]
-                    possible_results = self.memory.loc[phonemes, result_columns]
-                    letters_prob = possible_results.sum(axis=0)  # 每一列相加,取概率最大值
-                    letter = letters_prob.idxmax()
-                spelling.append(letter)
-            self.student_answer_pair.append([spelling, answer])
-
-    def evaluation(self):
-        for stu_answer, correct_answer in self.student_answer_pair:
-            stu_answer = ''.join([i.split('_')[0] for i in stu_answer])
-            correct_answer = ''.join([i.split('_')[0] for i in correct_answer])
-            word_accuracy = round(Levenshtein.ratio(correct_answer, stu_answer), 2)
-            word_completeness = round(1 - Levenshtein.distance(correct_answer, stu_answer) / len(correct_answer), 2)
-            word_perfect = 0.0
-            if stu_answer == correct_answer:
-                word_perfect = 1.0
-            self.accuracy.append(word_accuracy)
-            self.completeness.append(word_completeness)
-            self.perfect.append(word_perfect)
-        self.avg_accuracy = sum(self.accuracy) / len(self.accuracy)
-        self.avg_completeness = sum(self.completeness) / len(self.completeness)
-        self.avg_perfect = sum(self.perfect) / len(self.perfect)
-        return self.avg_accuracy, self.avg_completeness, self.avg_perfect
 
 
 if __name__ == '__main__':
