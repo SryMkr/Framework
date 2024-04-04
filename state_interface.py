@@ -14,7 +14,8 @@ class StateInterface(metaclass=abc.ABCMeta):
         history_words (List[str]): The history words.
         review_words_number (int): The number of words to be reviewed.
         sessions_number (int): The number of sessions.
-        current_session_words (int): The number of words to be reviewed in the current session.
+
+        current_session_words Dict[str, List[List[str]]]: [policy name : The words to be reviewed.].
 
 
         self._current_session_num: integer, the current session number
@@ -39,7 +40,8 @@ class StateInterface(metaclass=abc.ABCMeta):
         self._history_words: List[List[str]] = history_words
         self._review_words_number: int = review_words_number
         self._sessions_number: int = sessions_number
-        self._current_session_words: List[List[str]] = []
+
+        self._current_session_words: Dict[str, List[List[str]]] = dict()
 
         self._legal_actions: List[any] = [self._history_words,
                                           self._current_session_words,
@@ -127,7 +129,7 @@ class StateInterface(metaclass=abc.ABCMeta):
         return self._sessions_number
 
     @property
-    def current_session_words(self) -> List[List[str]]:
+    def current_session_words(self) -> Dict[str, List[List[str]]]:
         """
         :return: Returns the current session tasks.
         """

@@ -17,7 +17,7 @@ import torch
 
 
 class AgentAbstractBaseClass(metaclass=abc.ABCMeta):
-    """Abstract base class for all agents."""
+    """Agent abstract base class for all kinds of agents."""
 
     @abc.abstractmethod
     def __init__(self,
@@ -25,7 +25,7 @@ class AgentAbstractBaseClass(metaclass=abc.ABCMeta):
                  player_name: str,
                  **agent_specific_kwargs):
         """
-        Initializes the agent.
+        Initializes agent abstract base
 
         Args:
             player_id (int): The zero-based integer for the agent's index.
@@ -39,7 +39,7 @@ class AgentAbstractBaseClass(metaclass=abc.ABCMeta):
     def step(self, time_step):
         """
         Agents should observe the `time_step` from the environment and extract the required part of the
-        `time_step.observations` field and 'reward' field.
+        `time_step.observations` field and if applicable, the 'reward' field.
 
         Args:
             time_step: An instance of rl_environment.TimeStep.
@@ -64,43 +64,44 @@ class AgentAbstractBaseClass(metaclass=abc.ABCMeta):
 
 
 class CollectorAgentInterface(AgentAbstractBaseClass):
-    """An interface for a collector agent.
+    """An interface for the collector agent.
 
     This agent is responsible for collecting words to be reviewed from history words.
 
-    observation: extract the "history words" from rl_environment.TimeStep
-    Policy: there are two optional policy including "random", "AMB"
-            不同的agent之间的选词效果需要进行比较，所以它的action返回的时候是不同的agent选择的词
+    observation: extract the "history words", "review_words_number", "history_information" from rl_environment.TimeStep
+    Policies: Designate the policies you want to compare ["random", "MAB"]
     """
 
     @abc.abstractmethod
     def __init__(self,
                  player_id: int,
                  player_name: str,
-                 policy: str):
+                 policies: List[str]):
         """
         Initializes the collector agent.
 
         Args:
             player_id (int): The ID of the player.
             player_name (str): The name of the player.
-            policy (str): The policy used by the agent.
+            policies List[str]: The policies used by the agent.
+            self._actions Dict[str, List[List[str]]]: the first parameter is policy name, second is [[phonemes, letters]]
         """
         super().__init__(player_id, player_name)
-        self._policy: str = policy
+        self._policies: List[str] = policies
+        self._actions: Dict[str, List[List[str]]] = dict()
 
     @abc.abstractmethod
-    def step(self, time_step) -> List[List[str]]:
+    def step(self, time_step) -> Dict[str, List[List[str]]]:
         """
-        Executes a step for the agent.
+        Take a step for the agent.
 
          Args:
             time_step: An instance of rl_environment.TimeStep.
 
         Returns:
-            List[List[str]]: The words to be reviewed.
+            Dict[str, List[List[str]]]:  [policy name : The words to be reviewed.]
         """
-        pass
+        return self._actions
 
 
 class StudentAgentInterface(AgentAbstractBaseClass):
@@ -134,23 +135,24 @@ class StudentAgentInterface(AgentAbstractBaseClass):
         self._policy: str = policy
 
         # excellent memory dataframe
-        self._excellent_memory_df: pd.DataFrame = excellent_memory_dataframe
+        self._excellent_memory_df: Dict[str, pd.DataFrame] = {'excellent': excellent_memory_dataframe}
 
         # random memory dataframe and use it as noise
-        stu_memory_tensor = torch.tensor(self._excellent_memory_df.values,
+        stu_memory_tensor = torch.tensor(self._excellent_memory_df['excellent'].values,
                                          dtype=torch.float32)  # the shape of distribution
         noise = torch.randn_like(stu_memory_tensor)  # generate the noise
         scaled_noise = (noise - noise.min()) / (noise.max() - noise.min())
-        self._random_memory_df: pd.DataFrame = pd.DataFrame(scaled_noise.numpy(), index=self._excellent_memory_df.index,
-                                                            columns=self._excellent_memory_df.columns)
+        self._random_memory_df: Dict[str, pd.DataFrame] = {
+            'random_memory': pd.DataFrame(scaled_noise.numpy(), index=self._excellent_memory_df['excellent'].index,
+                                          columns=self._excellent_memory_df['excellent'].columns)}
 
         # forget memory dataframe
-        self._forget_memory_df: pd.DataFrame = pd.DataFrame()
+        self._forget_memory_df: Dict[str, pd.DataFrame] = dict()
         # learn memory dataframe
-        self._learn_memory_df: pd.DataFrame = pd.DataFrame()
+        self._learn_memory_df: Dict[str, pd.DataFrame] = dict()
 
     @abc.abstractmethod
-    def step(self, time_step) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def step(self, time_step) -> Tuple[Dict[str, pd.DataFrame]]:
         """
         Executes a step for the agent.
 
@@ -158,10 +160,10 @@ class StudentAgentInterface(AgentAbstractBaseClass):
             time_step: An instance of rl_environment.TimeStep.
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: The random (do not learn)
-                                                                         excellent (do not forget and do not need to learn)
-                                                                         forgetting (forget)
-                                                                         learn (forget then learn).
+            Tuple[Dict[str, pd.DataFrame]]: The random (do not learn)
+                                            excellent (do not forget and do not need to learn)
+                                            forgetting (forget)
+                                            learn (forget then learn).
         """
         pass
 
@@ -180,10 +182,10 @@ class ExaminerAgentInterface(AgentAbstractBaseClass):
         super().__init__(player_id,
                          player_name)
 
-        self._examiner_feedback: List[Tuple[any]] = []
+        self._examiner_feedback: Dict[str, List[Tuple[any]]] = dict()
 
     @abc.abstractmethod
-    def step(self, time_step) -> List[Tuple]:
+    def step(self, time_step) -> Dict[str, List[Tuple[any]]]:
         """
         Executes a step for the agent.
 

@@ -1,15 +1,10 @@
 """
 1: four agents instance
-
 Tasks:
-(1) simulate forgetting students
-(2) student learn from feedback
-(3) optimise all agents
-2/21 implement the multi armed bandit into session collector player
 step 1: calculate the KL divergence between wrong letter and excellent
 step 2: sort by descending
 step 3：the order will be the top 50 words
-接下来的任务是 嵌入不同的算法，来选择最合适的单词，先嵌入MAB
+
 """
 
 import random
@@ -28,36 +23,35 @@ class CollectorPlayer(CollectorAgentInterface):
     def __init__(self,
                  player_id,
                  player_name,
-                 policy):
+                 policies):
         super().__init__(player_id,
                          player_name,
-                         policy)
-
-    def MultiArmBandits(self):
-
-        pass
+                         policies)
 
     def step(self, time_step):
-        action = []
+
         legal_actions = time_step.observations["legal_actions"][self.player_id]
         review_words_number = time_step.observations["review_words_number"]
         history_information = time_step.observations["history_information"]
-        if self._policy == 'random':  # randomly select tasks per day
-            action = random.sample(legal_actions, review_words_number)
 
-        elif self._policy == 'MAB':  # Multi-Arm Bandit algorithm
-
-            if history_information is None:
+        for policy in self._policies:
+            if policy == 'random_collector':  # randomly select tasks per day
                 action = random.sample(legal_actions, review_words_number)
-            else:
-                _, student_excellent_memory, _, student_learn_memory = time_step.observations["student_memories"]
-                bandit = MultiArmBandit(len(legal_actions), legal_actions)
-                bandit.train_MAB(student_excellent_memory, student_learn_memory)
-                words_value_pair = dict(zip(map(tuple, legal_actions), bandit.arm_values))
-                sorted_pair = sorted(words_value_pair.items(), key=itemgetter(1), reverse=True)
-                action = [list(item[0]) for item in sorted_pair[-review_words_number:]]
-                # 如何直接利用examiner的反馈信息？
-        return action
+                self._actions[policy] = action
+            elif policy == 'MAB':  # Multi-Arm Bandit algorithm
+                if history_information is None:
+                    action = random.sample(legal_actions, review_words_number)
+                    self._actions[policy] = action
+                else:
+                    _, student_excellent_memory, _, student_learn_memory = time_step.observations["student_memories"]
+                    bandit = MultiArmBandit(len(legal_actions), legal_actions)
+                    bandit.train_MAB(student_excellent_memory['excellent'], student_learn_memory['MAB'])
+                    words_value_pair = dict(zip(map(tuple, legal_actions), bandit.arm_values))
+                    sorted_pair = sorted(words_value_pair.items(), key=itemgetter(1), reverse=True)
+                    action = [list(item[0]) for item in sorted_pair[-review_words_number:]]
+                    self._actions[policy] = action
+                    # how to use the feedback form examiner？
+        return self._actions
 
 
 # student player
@@ -116,23 +110,24 @@ class StudentPlayer(StudentAgentInterface):
         return unique_phonemes
 
     def step(self, time_step):
-
         current_session_number = time_step.observations["current_session_num"]
         if current_session_number == 0:
             history_words = time_step.observations["history_words"]
             sessions_number = time_step.observations["sessions_number"]
             self.history_unique_phonemes = self.add_position(history_words)
             self.excel_list, self.noise_list = self.forgetting_parameters(sessions_number)
-        self._forget_memory_df = self.forget_process(list(self.history_unique_phonemes), self._excellent_memory_df,
-                                                     self._random_memory_df,
-                                                     self.excel_list[current_session_number],
-                                                     self.noise_list[current_session_number])
+        self._forget_memory_df['forget'] = self.forget_process(list(self.history_unique_phonemes),
+                                                               self._excellent_memory_df['excellent'],
+                                                               self._random_memory_df['random_memory'],
+                                                               self.excel_list[current_session_number],
+                                                               self.noise_list[current_session_number])
 
         # for learn memory
         current_session_words = time_step.observations["current_session_words"]
-        tasks_unique_phonemes = self.add_position(current_session_words)
-        self._learn_memory_df = self.learn_process(tasks_unique_phonemes, self._forget_memory_df,
-                                                   self._excellent_memory_df)
+        for policy, tasks in current_session_words.items():
+            tasks_unique_phonemes = self.add_position(tasks)
+            self._learn_memory_df[policy] = self.learn_process(tasks_unique_phonemes, self._forget_memory_df['forget'],
+                                                               self._excellent_memory_df['excellent'])
         return self._random_memory_df, self._excellent_memory_df, self._forget_memory_df, self._learn_memory_df
 
 
@@ -182,10 +177,11 @@ class ExaminerPlayer(ExaminerAgentInterface):
         return pair_feedback, average_accuracy
 
     def step(self, time_step):
-        self._examiner_feedback = []
+        self._examiner_feedback = dict()
         student_memories = time_step.observations["student_memories"]
         history_words = time_step.observations["history_words"]
         for memory in student_memories:
-            examiner_feedback = self.evaluation(memory, history_words)
-            self._examiner_feedback.append(examiner_feedback)
+            for policy, mem_df in memory.items():
+                examiner_feedback = self.evaluation(mem_df, history_words)
+                self._examiner_feedback[policy] = examiner_feedback
         return self._examiner_feedback
