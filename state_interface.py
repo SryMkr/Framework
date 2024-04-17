@@ -1,5 +1,5 @@
 """
-define the state of environment
+define the state interface
 state provide whole necessary information to help env construct the TimeStep
 
 """
@@ -11,28 +11,21 @@ from typing import List, Tuple, Dict
 class StateInterface(metaclass=abc.ABCMeta):
     """The state interface
     :args
-        history_words (List[str]): The history words.
-        review_words_number (int): The number of words to be reviewed.
+        history_words (List[str]): A list of [phonemes, letters] pairs.
+        review_words_number (int): The number of words to be reviewed in each session.
         sessions_number (int): The number of sessions.
 
-        current_session_words Dict[str, List[List[str]]]: [policy name : The words to be reviewed.].
-
+        current_session_words Dict[str, List[List[str]]]: means [policy name : The words to be reviewed in each policy.].
+        self._legal_actions: construct legal action for each agent
 
         self._current_session_num: integer, the current session number
         self._game_over: if the game terminate
         self._current_player: the current player
-        self._legal_actions: construct legal action for each agent
 
-        self._condition: str = '', for student spelling
-        self._answer: str = '', for examine
-        self._answer_length: int = 0, control the answer length
-        self._LETTERS: = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
-                                         'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        self._student_memories:  store student memory dataframe
 
-        self.stu_memory_df:  store student memory dataframe
-        self._letter_feedback: List[int], student spelling feedback of per letter
-        self._accuracy: student answer accuracy
-        self._completeness: student answer feedback
+        self._examiner_feedback: give the feedback based on different policy.
+        self._history_information: Dict[session_number, examiner_feedback]
     """
 
     @abc.abstractmethod
@@ -54,28 +47,29 @@ class StateInterface(metaclass=abc.ABCMeta):
 
         # load students memory dataframe
         self._rewards: int = 0
-        self._examiner_feedback: list = []
-        self._history_information: Dict[int, list] = {}
+        self._examiner_feedback: Dict[str, List[Tuple[any]]] = dict()
+        self._history_information: Dict[int, dict] = {}
 
     @property
     def rewards(self) -> int:
         """
+        Do not use it currently
         :return: Returns the list of accuracy of each round
         """
         return self._rewards
 
     @property
-    def examiner_feedback(self) -> list:
+    def examiner_feedback(self) -> dict:
         """
-        :return: feedback per letter
+        Dictionary format: (policy_name, feedback)
+        :return: give the feedback based on different policy
         """
         return self._examiner_feedback
 
     @property
     def history_information(self) -> Dict:
         """
-        what kinds of observation should be record to help tutor make decision?
-        [condition[phonemes], answer length, examiner feedback[letters], accuracy, completeness]
+        Dict[policy_name, examiner_feedback]
         """
         return self._history_information
 
@@ -97,8 +91,7 @@ class StateInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def apply_action(self, action) -> int:
         """
-        apply action, and store necessary information
-        :return: Returns the (player ID) of the next player.
+        :return: Returns necessary information
         """
 
     @property
@@ -131,14 +124,14 @@ class StateInterface(metaclass=abc.ABCMeta):
     @property
     def current_session_words(self) -> Dict[str, List[List[str]]]:
         """
-        :return: Returns the current session tasks.
+        :return: Returns the current session tasks in each policy.
         """
         return self._current_session_words
 
     @property
     def current_session_num(self) -> int:
         """
-        :return: Returns current session.
+        :return: Returns current session number.
         """
         return self._current_session_num
 
@@ -152,6 +145,6 @@ class StateInterface(metaclass=abc.ABCMeta):
     @property
     def student_memories(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
-        :return: student memories
+        :return: student memories: excellent, forget, random, interfere
         """
         return self._student_memories

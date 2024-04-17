@@ -9,6 +9,7 @@ The functions of the environment comprise three parts
 
 """
 
+# import necessary packages
 import abc
 from typing import List, Optional, Dict
 from state_instance import State
@@ -110,16 +111,17 @@ class EnvironmentInterface(metaclass=abc.ABCMeta):
                  POS_setting=True, do you want POS?
                  english_setting=True, must be true
 
-                 history_words_number: the number of learned words in history
-                 review_words_number: the number of words per session
+                 history_words_number: the number of learned words over the course of history
+                 review_words_number: the number of words in each session
                  sessions_number:  the session numbers you want (days)
 
                  self._history_words: the environment is in charge of randomly choose the specific history words
 
                  self._state: read necessary information from state object
+
                  self._discount: the discount for the algorithm
                  self._should_reset: the timing to reset the game
-                 self._player_num: the number of players in my game
+                 self._player_num: the number of players, default is 3
                 """
 
         self._vocab_book_name: str = vocab_book_name
@@ -145,12 +147,11 @@ class EnvironmentInterface(metaclass=abc.ABCMeta):
         self._player_num: int = 3
 
     @abc.abstractmethod
-    def new_initial_state(self, history_words: List[List[str]], review_words_number: int,
-                          sessions_number: int) -> State:
+    def new_initial_state(self, history_words: List[List[str]], review_words_number: int, sessions_number: int) -> State:
         """
         Initialize the state of the environment.
 
-        :param history_words: A list of lists containing the history words provided by the environment.
+        :param history_words: A list of [phonemes, letters] pairs.
         :param review_words_number: An integer indicating the number of review words in each session.
         :param sessions_number: An integer indicating the number of sessions representing the time units (days).
 

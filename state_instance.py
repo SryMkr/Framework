@@ -2,6 +2,7 @@ from state_interface import StateInterface
 
 
 class State(StateInterface):
+    """the state instance"""
     def __init__(self, history_words, review_words_number, sessions_number):
         super().__init__(history_words, review_words_number, sessions_number)
 

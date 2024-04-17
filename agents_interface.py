@@ -6,8 +6,6 @@
     (2) step function: A: parameter: get the observation of environment time step
                        B: a policy get the observation and provide the action probabilities, then agent select an action based on probabilities
                        (Environment (observation, reward)-> agent ((policy function -> action probabilities)->action))
-    compared with the (uniform_random) agent that have different policy
-
 """
 
 import abc
@@ -99,7 +97,7 @@ class CollectorAgentInterface(AgentAbstractBaseClass):
             time_step: An instance of rl_environment.TimeStep.
 
         Returns:
-            Dict[str, List[List[str]]]:  [policy name : The words to be reviewed.]
+            Dict[str, List[List[str]]]:  Dict[policy name : The words to be reviewed.]
         """
         return self._actions
 

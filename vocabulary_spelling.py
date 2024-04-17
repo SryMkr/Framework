@@ -43,15 +43,15 @@ class draw_graph:
                      va='bottom')
             plt.text(x_points[i], MAB_collector_accuracy[i], str(MAB_collector_accuracy[i]), ha='center',
                      va='bottom')
-        # 添加标题和标签
+        # add title and label
         plt.title('Average Accuracy Each Session ')
         plt.xlabel('Days')
         plt.ylabel('Average Accuracy')
         plt.xticks(x_points)
-        # 添加图例
+
         plt.legend()
 
-        # 显示图形
+        # show graph
         plt.show()
 
 
