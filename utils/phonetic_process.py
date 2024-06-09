@@ -1,6 +1,9 @@
 """
 This file is to get the CMU/IPA phonemes information which is one of the important vocabulary information.
 NLTK and SpaCy library can possibly label the ‘part of speech’ information.
+
+Step 1: get the CMU phonemes first
+Step 2: convert the CMU to IPA phonemes based on dictionary below inferring from http://www.speech.cs.cmu.edu/cgi-bin/cmudict
 """
 from nltk.corpus import cmudict
 

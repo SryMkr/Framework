@@ -5,6 +5,13 @@ step 1: calculate the KL divergence between wrong letter and excellent
 step 2: sort by descending
 step 3：the order will be the top 50 words
 
+按照现在的设定是
+（1） 学习率越高曲线越高
+（2） 学的单词越多，不管什么方式表现出的结果都差不多
+（3） 按照最长和最短的方式学习，准确度也差不多了多少
+所以可以得出结论
+即使使用任何算法来挑选单词，都无法展现出非常大的学习效果
+那我之只能证明一点，即，MAB每一轮所选择的单词的准确度都比
 """
 
 import random
@@ -33,10 +40,18 @@ class CollectorPlayer(CollectorAgentInterface):
         legal_actions = time_step.observations["legal_actions"][self.player_id]
         review_words_number = time_step.observations["review_words_number"]
         history_information = time_step.observations["history_information"]
-
         for policy in self._policies:
             if policy == 'random_collector':  # randomly select tasks per day
                 action = random.sample(legal_actions, review_words_number)
+                self._actions[policy] = action
+                print(self._actions)
+            elif policy == 'longest_collector':  # 该策略每次都选择最长的前N个单词
+                sorted_desc = sorted(legal_actions, key=lambda x: len(''.join(x[0].split(' '))), reverse=True)
+                action = sorted_desc[:review_words_number]
+                self._actions[policy] = action
+            elif policy == 'shortest_collector':  # 该策略每次都选择最短的前N个单词
+                sorted_asc = sorted(legal_actions, key=lambda x: len(''.join(x[0].split(' '))))
+                action = sorted_asc[:review_words_number]
                 self._actions[policy] = action
             elif policy == 'MAB':  # Multi-Arm Bandit algorithm
                 if history_information is None:
@@ -106,8 +121,11 @@ class StudentPlayer(StudentAgentInterface):
         for phonemes_list in split_phonemes:
             for index, value in enumerate(phonemes_list):
                 position_phonemes.append(value + '_' + str(index))
-        unique_phonemes = set(position_phonemes)
-        return unique_phonemes
+        # 采用一个音标只学一次的方式 和 单词的每一个字母都学没有表现出巨大的差异，反而学习的单词数越多表现出来的差异越大
+        # unique_phonemes = set(position_phonemes)
+        # return unique_phonemes
+        # 使用第二种方式的理由是，我就复习
+        return position_phonemes
 
     def step(self, time_step):
         current_session_number = time_step.observations["current_session_num"]

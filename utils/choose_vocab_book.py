@@ -12,7 +12,7 @@ from typing import List
 
 
 class ReadVocabBookInterface(metaclass=abc.ABCMeta):
-    """ a base class to read data"""
+    """ a base class to read vocabulary data"""
 
     @abc.abstractmethod
     def __init__(self,

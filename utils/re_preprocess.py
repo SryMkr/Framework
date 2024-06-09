@@ -1,5 +1,5 @@
 """
-purposes: (1)provide the interface to build costuming data
+purposes: (1) provide the interface to build costuming data
           (2) save data to json file
 要把四种单词信息按顺序保存到文件中，为了避免重复意思，最好保存为字典的形式，这样每一个单词只对应一个意思
 
@@ -60,7 +60,7 @@ class PreProcessBook(PreProcessBookInterface):
         search_pattern = r'[()⋯*《》]'  # search special symbols
         part_of_speech = ['vt', 'a', 'n', 'ad', 'vt', 'vi', 'prep', 'pron', 'conj', 'aux']  # all part of speech
         match_pattern = r'[a-z]+\s+[a-z]+\s+[\u4e00-\u9fff]+'  # match my data pattern
-        results = {}  # store results，为了去除多意思单词
+        results = {}  # store results，用字典是为了去除一词多意
         with io.open(self._raw_file_path, encoding="utf8") as file:
             for line in file:
                 line = line.lower().strip()  # lower letter

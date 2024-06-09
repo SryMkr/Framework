@@ -48,7 +48,21 @@ class StateInterface(metaclass=abc.ABCMeta):
         # load students memory dataframe
         self._rewards: int = 0
         self._examiner_feedback: Dict[str, List[Tuple[any]]] = dict()
+        # time: examiner_feedback
         self._history_information: Dict[int, dict] = {}
+
+    @abc.abstractmethod
+    def legal_actions(self, player_ID) -> List:
+        """
+        :return: Returns the legal action of the agent.
+        """
+        return self._legal_actions[player_ID]
+
+    @abc.abstractmethod
+    def apply_action(self, action) -> int:
+        """
+        :return: Returns necessary information
+        """
 
     @property
     def rewards(self) -> int:
@@ -80,19 +94,6 @@ class StateInterface(metaclass=abc.ABCMeta):
 
         """
         return self._current_player
-
-    @abc.abstractmethod
-    def legal_actions(self, player_ID) -> List:
-        """
-        :return: Returns the legal action of the agent.
-        """
-        return self._legal_actions[player_ID]
-
-    @abc.abstractmethod
-    def apply_action(self, action) -> int:
-        """
-        :return: Returns necessary information
-        """
 
     @property
     def history_words(self) -> List[List[str]]:
