@@ -140,10 +140,10 @@ class StudentAgentInterface(AgentAbstractBaseClass):
                                          dtype=torch.float32)  # the shape of distribution
         noise = torch.randn_like(stu_memory_tensor)  # generate the noise
         scaled_noise = (noise - noise.min()) / (noise.max() - noise.min())
-        self._random_memory_df: Dict[str, pd.DataFrame] = {
-            'random_memory': pd.DataFrame(scaled_noise.numpy(), index=self._excellent_memory_df['excellent'].index,
-                                          columns=self._excellent_memory_df['excellent'].columns)}
-
+        random_memory = pd.DataFrame(scaled_noise.numpy(), index=self._excellent_memory_df['excellent'].index,
+                                     columns=self._excellent_memory_df['excellent'].columns)
+        result_df = random_memory.div(random_memory.sum(axis=1), axis=0)
+        self._random_memory_df: Dict[str, pd.DataFrame] = {'random_memory': result_df}
         # forget memory dataframe
         self._forget_memory_df: Dict[str, pd.DataFrame] = dict()
         # learn memory dataframe

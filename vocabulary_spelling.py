@@ -75,7 +75,7 @@ if __name__ == "__main__":
                          POS_setting=False,
                          english_setting=True,
                          history_words_number=50,
-                         review_words_number=3,
+                         review_words_number=5,
                          sessions_number=30,
                          )  # initialize game environment
 
@@ -83,10 +83,10 @@ if __name__ == "__main__":
     student_excellent_memory_path = os.path.join(current_path, 'StudentMemory/excellent_memory.xlsx')
     excellent_memory_df = pd.read_excel(student_excellent_memory_path, index_col=0, header=0)
 
-    agents = [CollectorPlayer(0, 'CollectorPlayer', ['random_collector', 'MAB', 'longest_collector', 'shortest_collector']),
-              StudentPlayer(1, 'StudentPlayer', excellent_memory_df, 'None'),
-              ExaminerPlayer(2, 'ExaminerPlayer')]
-
+    agents = [
+        CollectorPlayer(0, 'CollectorPlayer', ['random_collector', 'MAB', 'longest_collector', 'shortest_collector']),
+        StudentPlayer(1, 'StudentPlayer', excellent_memory_df, 'None'),
+        ExaminerPlayer(2, 'ExaminerPlayer')]
     time_step = env.reset()  # initialize state
 
     while not time_step.last():  # not terminate

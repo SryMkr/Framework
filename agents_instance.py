@@ -7,6 +7,7 @@ step 3：the order will be the top 50 words
 
 按照现在的设定是
 （1） 学习率越高曲线越高
+ (2)  学习的单词越多，提升越高
 （2） 学的单词越多，不管什么方式表现出的结果都差不多
 （3） 按照最长和最短的方式学习，准确度也差不多了多少
 所以可以得出结论
@@ -44,7 +45,6 @@ class CollectorPlayer(CollectorAgentInterface):
             if policy == 'random_collector':  # randomly select tasks per day
                 action = random.sample(legal_actions, review_words_number)
                 self._actions[policy] = action
-                print(self._actions)
             elif policy == 'longest_collector':  # 该策略每次都选择最长的前N个单词
                 sorted_desc = sorted(legal_actions, key=lambda x: len(''.join(x[0].split(' '))), reverse=True)
                 action = sorted_desc[:review_words_number]
@@ -85,7 +85,7 @@ class StudentPlayer(StudentAgentInterface):
         self.noise_list = None
 
     @staticmethod
-    def forgetting_parameters(timing_steps, excel_start=0.9, excel_end=0.4, noise_start=0.1, noise_end=1, decay_rate=2):
+    def forgetting_parameters(timing_steps, excel_start=0.9, excel_end=0.05, noise_start=0.05, noise_end=1, decay_rate=5):
         """create the weight pair of excellent memory and noise"""
         timing_points = np.linspace(0, 1, timing_steps)
         excel_list = (excel_start - excel_end) * np.exp(-decay_rate * timing_points) + excel_end
@@ -105,27 +105,29 @@ class StudentPlayer(StudentAgentInterface):
         return result_df
 
     @staticmethod
-    def learn_process(unique_phonemes, forget_dataframe, excellent_dataframe, learning_rate=0.01):
+    def learn_process(positioned_tasks, forget_dataframe, excellent_dataframe, learning_rate=0.9):
         """ this function aims to enhance memory, the larger the learning rate, the better the retention"""
         forget_dataframe_copy = forget_dataframe.copy()
-        for pho in unique_phonemes:
-            forget_dataframe_copy.loc[pho] = forget_dataframe.loc[pho] + learning_rate * excellent_dataframe.loc[pho]
+        for positioned_task in positioned_tasks:
+            forget_dataframe_copy.loc[positioned_task] = forget_dataframe.loc[positioned_task] + \
+                                                                                learning_rate * excellent_dataframe.loc[
+                                                                                    positioned_task]
         result_df = forget_dataframe_copy.div(forget_dataframe_copy.sum(axis=1), axis=0)
         return result_df
 
     @staticmethod
     def add_position(history_words: List[List[str]]):
-        """ add the noise to simulate forgetting"""
-        split_phonemes = [pair[0].split(' ') for pair in history_words]
-        position_phonemes = []
-        for phonemes_list in split_phonemes:
-            for index, value in enumerate(phonemes_list):
-                position_phonemes.append(value + '_' + str(index))
-        # 采用一个音标只学一次的方式 和 单词的每一个字母都学没有表现出巨大的差异，反而学习的单词数越多表现出来的差异越大
-        # unique_phonemes = set(position_phonemes)
-        # return unique_phonemes
-        # 使用第二种方式的理由是，我就复习
-        return position_phonemes
+        """ add position to phonemes and tasks"""
+        positioned_task = []
+        for phonemes, letters in history_words:
+            position_phonemes = []
+            position_letters = []
+            for index, phoneme in enumerate(phonemes.split(' ')):
+                position_phonemes.append(phoneme + '_' + str(index))
+            for index, letter in enumerate(letters.split(' ')):
+                position_letters.append(letter + '_' + str(index))
+            positioned_task.append((position_phonemes, position_letters))
+        return positioned_task
 
     def step(self, time_step):
         current_session_number = time_step.observations["current_session_num"]
@@ -169,15 +171,10 @@ class ExaminerPlayer(ExaminerAgentInterface):
             for position, phoneme in enumerate(split_phoneme):
                 position_condition.append(phoneme + '_' + str(position))
             for i in range(len(split_letters)):
-                if i == 0:
-                    result_columns = [al + '_' + str(i) for al in self.alphabet]
-                    possible_results = memory.loc[position_condition[0], result_columns]
-                    letter = possible_results.idxmax()
-                else:
-                    result_columns = [al + '_' + str(i) for al in self.alphabet]
-                    possible_results = memory.loc[position_condition, result_columns]
-                    letters_prob = possible_results.sum(axis=0)
-                    letter = letters_prob.idxmax()
+                result_columns = [al + '_' + str(i) for al in self.alphabet]
+                possible_results = memory.loc[position_condition, result_columns]
+                letters_prob = possible_results.sum(axis=0)
+                letter = letters_prob.idxmax()
                 spelling.append(letter.split('_')[0])
 
             student_spelling = ''.join(spelling)
@@ -189,7 +186,6 @@ class ExaminerPlayer(ExaminerAgentInterface):
             letters_mark = [x + '_' + str(1) if x == y else x + '_' + str(0) for x, y in
                             zip(student_spelling, correct_spelling)]
             pair_feedback[tuple(pair)] = (letters_mark, word_accuracy)
-
             word_accuracy_list.append(word_accuracy)
         average_accuracy = round(sum(word_accuracy_list) / len(word_accuracy_list), 2)
         return pair_feedback, average_accuracy
