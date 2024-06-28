@@ -6,10 +6,10 @@ step 2: sort by descending
 step 3：the order will be the top 50 words
 
 按照现在的设定是
-（1） 学习率越高曲线越高
+ (1) 学习率越高曲线越高
  (2)  学习的单词越多，提升越高
-（2） 学的单词越多，不管什么方式表现出的结果都差不多
-（3） 按照最长和最短的方式学习，准确度也差不多了多少
+ (3) 学的单词越多，不管什么方式表现出的结果都差不多
+
 所以可以得出结论
 即使使用任何算法来挑选单词，都无法展现出非常大的学习效果
 那我之只能证明一点，即，MAB每一轮所选择的单词的准确度都比
@@ -17,6 +17,7 @@ step 3：the order will be the top 50 words
 
 import random
 import string
+from collections import Counter
 import Levenshtein
 from agents_interface import *
 import numpy as np
@@ -41,6 +42,7 @@ class CollectorPlayer(CollectorAgentInterface):
         legal_actions = time_step.observations["legal_actions"][self.player_id]
         review_words_number = time_step.observations["review_words_number"]
         history_information = time_step.observations["history_information"]
+        current_session_number = time_step.observations["current_session_num"]
         for policy in self._policies:
             if policy == 'random_collector':  # randomly select tasks per day
                 action = random.sample(legal_actions, review_words_number)
@@ -58,13 +60,52 @@ class CollectorPlayer(CollectorAgentInterface):
                     action = random.sample(legal_actions, review_words_number)
                     self._actions[policy] = action
                 else:
-                    _, student_excellent_memory, _, student_learn_memory = time_step.observations["student_memories"]
-                    bandit = MultiArmBandit(len(legal_actions), legal_actions)
-                    bandit.train_MAB(student_excellent_memory['excellent'], student_learn_memory['MAB'])
-                    words_value_pair = dict(zip(map(tuple, legal_actions), bandit.arm_values))
-                    sorted_pair = sorted(words_value_pair.items(), key=itemgetter(1), reverse=True)
-                    action = [list(item[0]) for item in sorted_pair[-review_words_number:]]
+                    current_examiner_feedback = history_information[current_session_number - 1]
+                    forget_feedback = current_examiner_feedback['forget']
+                    # 锁定每一个任务所影响的区域,计算每个单词对纠正的共享
+                    task_impact = {}
+                    wrong_area_counter = []
+                    for task, feedback in forget_feedback[0].items():
+                        wrong_area_list = []
+                        word = ''.join(task[1].split(' '))
+                        wrong_area = 0
+                        for letter in feedback[0]:
+                            l, m = letter.split('_')
+                            if m == '0':
+                                wrong_area_list.append(word[wrong_area] + '_' + str(wrong_area))
+                                wrong_area_counter.append(word[wrong_area] + '_' + str(wrong_area))
+                            wrong_area += 1
+                        task_impact[task] = wrong_area_list
+
+                    wrong_area_total_counter = Counter(wrong_area_counter)
+                    print(wrong_area_total_counter)
+                    word_correction_scores = {}
+
+                    for words, positions in task_impact.items():
+                        if len(positions) != 0:
+                            total_correction_score = sum(wrong_area_total_counter[pos] for pos in positions)
+                        else:
+                            total_correction_score = 0
+                        word_correction_scores[words] = total_correction_score
+                    print(word_correction_scores)
+                    sorted_word_correction_scores = sorted(word_correction_scores.items(), key=lambda item: item[1],
+                                                           reverse=True)
+                    # 如果某个单词已经被选择过了，那么其影响力应该随之下降一位
+                    # print(wrong_area_total_counter)
+                    print(sorted_word_correction_scores)
+                    # action = [list(words) for words, score in sorted_word_correction_scores[:review_words_number]]
+                    action = [list(words) for words, score in sorted_word_correction_scores[-review_words_number:]]
                     self._actions[policy] = action
+
+                    # _, student_excellent_memory, student_forget_memory, student_learn_memory = time_step.observations["student_memories"]
+                    # bandit = MultiArmBandit(len(legal_actions), legal_actions)
+                    # # 根据当前的遗忘记忆，肯定是有学生对于遗忘记忆的单词的反馈
+                    # bandit.train_MAB(student_excellent_memory['excellent'], student_forget_memory['forget'])
+                    # words_value_pair = dict(zip(map(tuple, legal_actions), bandit.arm_values))
+                    # sorted_pair = sorted(words_value_pair.items(), key=itemgetter(1), reverse=True)  # 降序
+                    # action = [list(item[0]) for item in sorted_pair[-review_words_number:]]  # 取最小的
+                    # # action = [list(item[0]) for item in sorted_pair[:review_words_number]]  # 取最大的
+                    # self._actions[policy] = action
                     # how to use the feedback form examiner？
         return self._actions
 
@@ -85,7 +126,8 @@ class StudentPlayer(StudentAgentInterface):
         self.noise_list = None
 
     @staticmethod
-    def forgetting_parameters(timing_steps, excel_start=0.9, excel_end=0.05, noise_start=0.05, noise_end=1, decay_rate=5):
+    def forgetting_parameters(timing_steps, excel_start=0.9, excel_end=0.05, noise_start=0.05, noise_end=1,
+                              decay_rate=5):
         """create the weight pair of excellent memory and noise"""
         timing_points = np.linspace(0, 1, timing_steps)
         excel_list = (excel_start - excel_end) * np.exp(-decay_rate * timing_points) + excel_end
@@ -105,13 +147,13 @@ class StudentPlayer(StudentAgentInterface):
         return result_df
 
     @staticmethod
-    def learn_process(positioned_tasks, forget_dataframe, excellent_dataframe, learning_rate=0.9):
+    def learn_process(positioned_tasks, forget_dataframe, excellent_dataframe, learning_rate=0.5):
         """ this function aims to enhance memory, the larger the learning rate, the better the retention"""
         forget_dataframe_copy = forget_dataframe.copy()
         for positioned_task in positioned_tasks:
             forget_dataframe_copy.loc[positioned_task] = forget_dataframe.loc[positioned_task] + \
-                                                                                learning_rate * excellent_dataframe.loc[
-                                                                                    positioned_task]
+                                                         learning_rate * excellent_dataframe.loc[
+                                                             positioned_task]
         result_df = forget_dataframe_copy.div(forget_dataframe_copy.sum(axis=1), axis=0)
         return result_df
 
@@ -179,7 +221,6 @@ class ExaminerPlayer(ExaminerAgentInterface):
 
             student_spelling = ''.join(spelling)
             correct_spelling = ''.join(split_letters)
-
             # calculate the similarity of pair
             word_accuracy = round(Levenshtein.ratio(correct_spelling, student_spelling), 2)
             # mark each letter

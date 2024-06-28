@@ -134,7 +134,6 @@ class StudentAgentInterface(AgentAbstractBaseClass):
 
         # excellent memory dataframe
         self._excellent_memory_df: Dict[str, pd.DataFrame] = {'excellent': excellent_memory_dataframe}
-
         # random memory dataframe and use it as noise
         stu_memory_tensor = torch.tensor(self._excellent_memory_df['excellent'].values,
                                          dtype=torch.float32)  # the shape of distribution

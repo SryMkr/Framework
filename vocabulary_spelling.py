@@ -75,7 +75,7 @@ if __name__ == "__main__":
                          POS_setting=False,
                          english_setting=True,
                          history_words_number=50,
-                         review_words_number=5,
+                         review_words_number=10,
                          sessions_number=30,
                          )  # initialize game environment
 

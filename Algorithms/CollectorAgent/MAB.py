@@ -37,18 +37,33 @@ class MultiArmBandit:
            标准用最简单的特征概括大多数的任务
         """
         # method 1； whole KL entropy
-        position_phonemes = []
+        # position_phonemes = []
+        # total_entropy = 0
+        # current_observation = self.observation[arm][0].split(' ')
+        # for position, phoneme in enumerate(current_observation):
+        #     position_phonemes.append(phoneme + '_' + str(position))
+        # for position_phoneme in position_phonemes:
+        #     excellent_prob = excellent_dataframe.loc[position_phoneme].values
+        #     forget_prob = forget_dataframe.loc[position_phoneme].values
+        #     total_entropy += entropy(excellent_prob, forget_prob, base=2)
+        # reward = total_entropy / len(position_phonemes)
+
+        # method 2； specific columns
         total_entropy = 0
-
-        current_observation = self.observation[arm][0].split(' ')
-
-        for position, phoneme in enumerate(current_observation):
-            position_phonemes.append(phoneme + '_' + str(position))
-        for position_phoneme in position_phonemes:
-            excellent_prob = excellent_dataframe.loc[position_phoneme].values
-            forget_prob = forget_dataframe.loc[position_phoneme].values
-            total_entropy += entropy(excellent_prob, forget_prob, base=2)
-        reward = total_entropy / len(position_phonemes)
+        position_phonemes = []
+        position_letters = []
+        for index, phoneme in enumerate(self.observation[arm][0].split(' ')):
+            position_phonemes.append(phoneme + '_' + str(index))
+        for index, letter in enumerate(self.observation[arm][1].split(' ')):
+            position_letters.append(letter + '_' + str(index))
+        positioned_task = (position_phonemes, position_letters)
+        excellent_prob = excellent_dataframe.loc[positioned_task].values
+        forget_prob = forget_dataframe.loc[positioned_task].values
+        kl_entropy = [entropy(excellent_prob[i], forget_prob[i], base=2) for i in range(excellent_prob.shape[0])]
+        # 总的KL散度是每行KL散度的总和
+        reward = np.sum(kl_entropy)
+        # total_entropy = np.sum(kl_entropy)
+        # reward = total_entropy / len(position_phonemes)
         return reward
 
     def update(self, chosen_arm, reward):
@@ -62,19 +77,10 @@ class MultiArmBandit:
         new_value = value + (reward - value) / n
         self.arm_values[chosen_arm] = new_value
 
-    def train_MAB(self, excellent_memory_df, forget_memory_df, epoch=200, exploration_rate=0.5):
+    def train_MAB(self, excellent_memory_df, forget_memory_df, epoch=400, exploration_rate=0.5):
         """ train the MAB model"""
         for _ in range(epoch):
             selected_arm = self.select_arm(exploration_rate)
             selected_arm_reward = self.reward_function(selected_arm, excellent_memory_df, forget_memory_df)
             self.update(selected_arm, selected_arm_reward)
 
-
-if __name__ == '__main__':
-
-    # 输出每个臂被选择的次数和估计值
-    for i in range(len(selected_items)):
-        task_value[selected_items[i][0]] = (bandit.arm_values[i], bandit.accuracy[i])
-    # 按照价值大小排序，则排好的顺序就是应该记忆的顺序,这种判定方式容易选择长的词
-    sorted_dict = dict(sorted(task_value.items(), key=lambda item: item[1], reverse=True))
-    print(sorted_dict)
