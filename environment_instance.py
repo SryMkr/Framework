@@ -52,7 +52,7 @@ class VocabSpellGame(EnvironmentInterface):
                         "legal_actions": [],
                         "current_player": self._state.current_player,
                         "student_memories": None,
-                        "current_session_num": None,
+                        "current_session_num": 0,
                         "examiner_feedback": None,
                         "history_information": None}
 

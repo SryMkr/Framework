@@ -19,6 +19,7 @@ class draw_graph:
         forget_accuracy = []
         random_collector_accuracy = []
         MAB_collector_accuracy = []
+        lowest_collector_accuracy = []
         longest_collector_accuracy = []
         shortest_collector_accuracy = []
         for session_number, information in self.history_information.items():
@@ -26,29 +27,33 @@ class draw_graph:
             excellent_accuracy.append(information["excellent"][1])
             forget_accuracy.append(information["forget"][1])
             random_collector_accuracy.append(information["random_collector"][1])
-            MAB_collector_accuracy.append(information["MAB"][1])
+            MAB_collector_accuracy.append(information["KL"][1])
+            lowest_collector_accuracy.append(information["lowest_accuracy_collector"][1])
             longest_collector_accuracy.append(information["longest_collector"][1])
             shortest_collector_accuracy.append(information["shortest_collector"][1])
 
         plt.figure(figsize=(15, 6))
         x_points = list(self.history_information.keys())
         # draw graph
-        plt.plot(x_points, random_accuracy, color='blue', linestyle='-', label='Random')
-        plt.plot(x_points, excellent_accuracy, color='red', linestyle='-', label='Excellent')
-        plt.plot(x_points, forget_accuracy, color='green', linestyle='-.', label='Forget')
+        # plt.plot(x_points, random_accuracy, color='blue', linestyle='-', label='Random')
+        # plt.plot(x_points, excellent_accuracy, color='red', linestyle='-', label='Excellent')
+        # plt.plot(x_points, forget_accuracy, color='green', linestyle='-.', label='Forget')
         plt.plot(x_points, random_collector_accuracy, color='orange', linestyle='--', label='random_collector')
-        plt.plot(x_points, MAB_collector_accuracy, color='k', linestyle='--', label='MAB_collector')
+        plt.plot(x_points, MAB_collector_accuracy, color='k', linestyle=':', label='KL_collector')
+        # plt.plot(x_points, lowest_collector_accuracy, color='m', linestyle='solid', label='lowest_collector')
         plt.plot(x_points, longest_collector_accuracy, color='purple', linestyle='--', label='longest_collector')
         plt.plot(x_points, shortest_collector_accuracy, color='cyan', linestyle='--', label='shortest_collector')
 
         for i in range(len(x_points)):
-            plt.text(x_points[i], random_accuracy[i], str(random_accuracy[i]), ha='center', va='bottom')
-            plt.text(x_points[i], excellent_accuracy[i], str(excellent_accuracy[i]), ha='center', va='bottom')
-            plt.text(x_points[i], forget_accuracy[i], str(forget_accuracy[i]), ha='center', va='bottom')
+            # plt.text(x_points[i], random_accuracy[i], str(random_accuracy[i]), ha='center', va='bottom')
+            # plt.text(x_points[i], excellent_accuracy[i], str(excellent_accuracy[i]), ha='center', va='bottom')
+            # plt.text(x_points[i], forget_accuracy[i], str(forget_accuracy[i]), ha='center', va='bottom')
             plt.text(x_points[i], random_collector_accuracy[i], str(random_collector_accuracy[i]), ha='center',
                      va='bottom')
             plt.text(x_points[i], MAB_collector_accuracy[i], str(MAB_collector_accuracy[i]), ha='center',
                      va='bottom')
+            # plt.text(x_points[i], lowest_collector_accuracy[i], str(lowest_collector_accuracy[i]), ha='center',
+            #          va='bottom')
             plt.text(x_points[i], longest_collector_accuracy[i], str(longest_collector_accuracy[i]), ha='center',
                      va='bottom')
             plt.text(x_points[i], shortest_collector_accuracy[i], str(shortest_collector_accuracy[i]), ha='center',
@@ -74,24 +79,25 @@ if __name__ == "__main__":
                          phonetic_setting=True,
                          POS_setting=False,
                          english_setting=True,
-                         history_words_number=50,
-                         review_words_number=10,
+                         history_words_number=70,
+                         review_words_number=30,
                          sessions_number=30,
                          )  # initialize game environment
 
     # instance agents
     student_excellent_memory_path = os.path.join(current_path, 'StudentMemory/excellent_memory.xlsx')
+    student_random_memory_path = os.path.join(current_path, 'StudentMemory/random_memory.xlsx')
     excellent_memory_df = pd.read_excel(student_excellent_memory_path, index_col=0, header=0)
-
+    random_memory_df = pd.read_excel(student_random_memory_path, index_col=0, header=0)
     agents = [
-        CollectorPlayer(0, 'CollectorPlayer', ['random_collector', 'MAB', 'longest_collector', 'shortest_collector']),
-        StudentPlayer(1, 'StudentPlayer', excellent_memory_df, 'None'),
+        CollectorPlayer(0, 'CollectorPlayer', ['random_collector', 'KL', 'lowest_accuracy_collector', 'longest_collector', 'shortest_collector']),
+        StudentPlayer(1, 'StudentPlayer', excellent_memory_df, random_memory_df, 'None'),
         ExaminerPlayer(2, 'ExaminerPlayer')]
-    time_step = env.reset()  # initialize state
-
-    while not time_step.last():  # not terminate
-        player_id = time_step.observations["current_player"]  # current player
-        agent_output = agents[player_id].step(time_step)  # action
-        time_step = env.step(agent_output)  # current TimeStep
-    draw_accuracy = draw_graph(time_step.observations["history_information"])
-    draw_accuracy.draw_average_accuracy()
+    for i in range(100):
+        time_step = env.reset()  # initialize state
+        while not time_step.last():  # not terminate
+            player_id = time_step.observations["current_player"]  # current player
+            agent_output = agents[player_id].step(time_step)  # action
+            time_step = env.step(agent_output)  # current TimeStep
+        draw_accuracy = draw_graph(time_step.observations["history_information"])
+        draw_accuracy.draw_average_accuracy()

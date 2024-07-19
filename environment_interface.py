@@ -141,6 +141,8 @@ class EnvironmentInterface(metaclass=abc.ABCMeta):
         self._vocab_data: List[List[str]] = self._ReadVocabBook.read_vocab_book()
         # select the history words in accord with the history words number from vocab_data
         # the format is [['ɑ r m', 'a r m'], ['p u l', 'p o o l'], ['r u f', 'r o o f']]
+        # self._history_words: List[List[str]] = self._vocab_data[:self._history_words_number]
+        # self._history_words: List[List[str]] = self._vocab_data[200: self._history_words_number+200]
         self._history_words: List[List[str]] = random.sample(self._vocab_data, self._history_words_number)
         self._state: Optional[State] = None
         self._discount: float = discount

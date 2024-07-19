@@ -11,7 +11,6 @@
 import abc
 from typing import List, Tuple, Dict
 import pandas as pd
-import torch
 
 
 class AgentAbstractBaseClass(metaclass=abc.ABCMeta):
@@ -118,6 +117,7 @@ class StudentAgentInterface(AgentAbstractBaseClass):
                  player_id: int,
                  player_name: str,
                  excellent_memory_dataframe: pd.DataFrame,
+                 random_memory_dataframe: pd.DataFrame,
                  policy: str):
         """
         Initializes the student agent.
@@ -131,18 +131,9 @@ class StudentAgentInterface(AgentAbstractBaseClass):
         """
         super().__init__(player_id, player_name)
         self._policy: str = policy
-
         # excellent memory dataframe
         self._excellent_memory_df: Dict[str, pd.DataFrame] = {'excellent': excellent_memory_dataframe}
-        # random memory dataframe and use it as noise
-        stu_memory_tensor = torch.tensor(self._excellent_memory_df['excellent'].values,
-                                         dtype=torch.float32)  # the shape of distribution
-        noise = torch.randn_like(stu_memory_tensor)  # generate the noise
-        scaled_noise = (noise - noise.min()) / (noise.max() - noise.min())
-        random_memory = pd.DataFrame(scaled_noise.numpy(), index=self._excellent_memory_df['excellent'].index,
-                                     columns=self._excellent_memory_df['excellent'].columns)
-        result_df = random_memory.div(random_memory.sum(axis=1), axis=0)
-        self._random_memory_df: Dict[str, pd.DataFrame] = {'random_memory': result_df}
+        self._random_memory_df: Dict[str, pd.DataFrame] = {'random_memory': random_memory_dataframe}
         # forget memory dataframe
         self._forget_memory_df: Dict[str, pd.DataFrame] = dict()
         # learn memory dataframe
