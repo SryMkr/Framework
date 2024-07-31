@@ -71,7 +71,7 @@ def topsis(new_information):
     return word_contribution
 
 
-class KL:
+class TopsisAlogorithm:
     """ KL divergence"""
 
     def __init__(self, observation, feedback, review_words_number):

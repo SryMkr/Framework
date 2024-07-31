@@ -101,7 +101,7 @@ class VocabSpellGame(EnvironmentInterface):
     def step(self, action):
         if self._should_reset:
             return self.reset()
-
-        self._state.apply_action(action)  # (1) apply action/actions
+        # (1) apply action/actions
+        self._state.apply_action(action)
         # (2) construct new TimeStep
         return self.get_time_step()

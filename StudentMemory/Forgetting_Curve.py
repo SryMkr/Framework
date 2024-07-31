@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from utils.choose_vocab_book import ReadVocabBook
 
 CURRENT_PATH = os.getcwd()  # get the current path
-VOCAB_PATH: str = os.path.join(CURRENT_PATH, 'VocabularyBook', 'CET4', 'vocabulary.json')  # get the vocab data path
+VOCAB_PATH: str = os.path.join(CURRENT_PATH, '../VocabularyBook', 'CET4', 'vocabulary.json')  # get the vocab data path
 corpus_instance = ReadVocabBook(vocab_book_path=VOCAB_PATH,
                                 vocab_book_name='CET4',
                                 chinese_setting=False,
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     random_avg_acc_list = [0.15]
 
     current_path = os.getcwd()
-    student_excellent_memory_path = os.path.join(current_path, 'StudentMemory/excellent_memory.xlsx')
+    student_excellent_memory_path = os.path.join(current_path, 'excellent_memory.xlsx')
     excellent_memory_df = pd.read_excel(student_excellent_memory_path, index_col=0, header=0)
 
     for t in range(1, steps + 1):

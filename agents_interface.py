@@ -1,5 +1,5 @@
 """
-1: agent base abstract class, and per agent interface
+1: agent base abstract class, and every agent interface
 2: initialize some parameters that will be regularly used in agents instance
 # In a nutshell: An agent normally has
     (1) attributes: player_ID, player_Name, **agent_specific_kwargs, all implemented in __init__ function
@@ -65,7 +65,8 @@ class CollectorAgentInterface(AgentAbstractBaseClass):
 
     This agent is responsible for collecting words to be reviewed from history words.
 
-    observation: extract the "history words", "review_words_number", "history_information" from rl_environment.TimeStep
+    observation: extract the "history words", "review_words_number", "history_information", "current_session_num"
+                    from rl_environment.TimeStep
     Policies: Designate the policies you want to compare ["random", "MAB"]
     """
 
@@ -142,7 +143,7 @@ class StudentAgentInterface(AgentAbstractBaseClass):
     @abc.abstractmethod
     def step(self, time_step) -> Tuple[Dict[str, pd.DataFrame]]:
         """
-        Executes a step for the agent.
+        Executes a step.
 
         Args:
             time_step: An instance of rl_environment.TimeStep.

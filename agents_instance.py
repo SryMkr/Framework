@@ -1,19 +1,11 @@
 """
-1: four agents instance
-Tasks:
-step 1: calculate the KL divergence between wrong letter and excellent
-step 2: sort by descending
-step 3：the order will be the top 50 words
+the tutor agent, student agent, and examiner agent instance
 
 按照现在的设定是
- (1) 学习率越高曲线越高
- (2) 学习的单词越多，提升越高
- (3) 学的单词越多，不管什么方式表现出的结果都差不多
+ (1) 学习率越高,曲线越高
+ (2) 学习的单词越多，曲线越高
+ (3) 全部学习，所有方式的结果都一样
  (4) 正确单词的元音比例/辅音比例无法确当优劣
-
-所以可以得出结论
-（1）音标长度先是长的有优势，后期短的有优势
-
 """
 
 import random
@@ -21,7 +13,7 @@ import string
 import Levenshtein
 from agents_interface import *
 import numpy as np
-from Algorithms.CollectorAgent.KL_divergence import KL
+from Algorithms.CollectorAgent.TOPSIS import TopsisAlogorithm
 
 
 # TaskCollector Agent
@@ -36,14 +28,11 @@ class CollectorPlayer(CollectorAgentInterface):
                          player_name,
                          policies)
 
-        self.MAB_history = {}
-
     def step(self, time_step):
         legal_actions = time_step.observations["legal_actions"][self.player_id]
         current_session_number = time_step.observations["current_session_num"]
         review_words_number = time_step.observations["review_words_number"]
         history_information = time_step.observations["history_information"]
-
         for policy in self._policies:
             if policy == 'random_collector':  # randomly select tasks per day
                 action = random.sample(legal_actions, review_words_number)
@@ -59,25 +48,7 @@ class CollectorPlayer(CollectorAgentInterface):
                 action = sorted_asc[:review_words_number]
                 self._actions[policy] = action
 
-            elif policy == 'lowest_accuracy_collector':
-                if history_information is None:
-                    sorted_desc = sorted(legal_actions, key=lambda x: len(''.join(x[0].split(' '))), reverse=True)
-                    action = sorted_desc[:review_words_number]
-                    self._actions[policy] = action
-                else:
-                    current_examiner_feedback = history_information[current_session_number - 1]
-                    forget_feedback = current_examiner_feedback['forget']
-                    acc_data = {}
-                    for key, values in forget_feedback[0].items():
-                        acc_data[key] = 1 - values[1]
-                    score_system = {}
-                    for word in forget_feedback[0].keys():
-                        score_system[word] = acc_data[word]
-                    sorted_data = sorted(score_system.items(), key=lambda item: item[1], reverse=True)
-                    action = [list(words) for words, score in sorted_data[:review_words_number]]
-                self._actions[policy] = action
-
-            elif policy == 'KL':
+            elif policy == 'TOPSIS':
                 if history_information is None:
                     action = random.sample(legal_actions, review_words_number)
                     self._actions[policy] = action
@@ -85,11 +56,11 @@ class CollectorPlayer(CollectorAgentInterface):
                     _, student_excellent_memory, student_forget_memory, _ = time_step.observations["student_memories"]
                     current_examiner_feedback = history_information[current_session_number - 1]
                     forget_feedback = current_examiner_feedback['forget']
-                    KL_collector = KL(legal_actions, forget_feedback, review_words_number)
+                    KL_collector = TopsisAlogorithm(legal_actions, forget_feedback, review_words_number)
                     word_contribution = KL_collector.reward_function(student_excellent_memory['excellent'],
                                                                      student_forget_memory['forget'])
                     sorted_data = [list(k) for k, v in sorted(word_contribution.items(), key=lambda item: item[1], reverse=True)]
-                    action = sorted_data[:review_words_number]  # 贡献从大到小排序
+                    action = sorted_data[:review_words_number]
                     self._actions[policy] = action
         return self._actions
 
@@ -133,7 +104,7 @@ class StudentPlayer(StudentAgentInterface):
         return result_df
 
     @staticmethod
-    def learn_process(positioned_tasks, forget_dataframe, excellent_dataframe, learning_rate=0.5):
+    def learn_process(positioned_tasks, forget_dataframe, excellent_dataframe, learning_rate=1):
         """ this function aims to enhance memory, the larger the learning rate, the better the retention"""
         forget_dataframe_copy = forget_dataframe.copy()
         for positioned_task in positioned_tasks:
